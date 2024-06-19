@@ -1,0 +1,21 @@
+{
+  "name": "examples",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx vite dev",
+    "build:watch": "npx vite build --watch",
+    "build": "npx vite build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "ibus-qikai": "file:.."
+  },
+  "devDependencies": {
+    "vite": "^5.3.1",
+    "vite-plugin-html": "^3.2.2"
+  }
+}

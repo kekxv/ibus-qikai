@@ -11,6 +11,8 @@ strokes.push([{x: 5, y: 5}, {x: 10, y: 70}, {x: 100, y: 100}]);
 console.time("domatch")
 let result = handwrite.domatch(strokes);
 console.timeEnd("domatch")
+console.log("pinyin:pin,", handwrite.pinyinmatch("pin"))
+console.log("pinyin:yin,", handwrite.pinyinmatch("yin"))
 
 document.body.onload = function () {
   console.log("加载成功")

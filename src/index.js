@@ -4,6 +4,7 @@
  * @constructor
  */
 import table from './handwrite.table'
+import pinyinUtil from "./pinyin/pinyinUtil";
 
 function domatch(stroke) {
   let result = [];
@@ -28,8 +29,9 @@ function domatch(stroke) {
  */
 const IBusQukai = function (option) {
   if (!(this instanceof IBusQukai)) throw new Error("请使用 new IBusQukai()方式调用");
-  if (option.model !== 'handwrite') {
-    throw new Error("暂不支持手写之外输入法")
+  option.model = option.model || 'handwrite';
+  if (option.model !== 'handwrite' && option.model !== 'pinyin') {
+    throw new Error(`暂不支持${option.model}输入法`)
   }
   let onword = option.onword || function () {
   }
@@ -256,6 +258,9 @@ IBusQukai.prototype.domatch = function (strokes) {
     result.push(ret[key]);
   }
   return {result, stroke};
+}
+IBusQukai.prototype.pinyinmatch = function (pinyin) {
+  return pinyinUtil.getHanzi(pinyin)
 }
 
 export default IBusQukai

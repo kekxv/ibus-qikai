@@ -1,6 +1,6 @@
 {
   "name": "ibus-qikai",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "src/index.js",
   "scripts": {
     "dev": "vite dev",
@@ -8,7 +8,12 @@
     "build:watch": "vite build --watch",
     "pushnpm": "npm publish --registry https://registry.npmjs.org"
   },
-  "keywords": [],
+  "homepage": "https://github.com/kekxv/ibus-qikai",
+  "keywords": [
+    "pinyin",
+    "handwrite",
+    "web-ibus"
+  ],
   "author": "QIKAI",
   "license": "ISC",
   "description": "",

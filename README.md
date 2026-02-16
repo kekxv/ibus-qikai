@@ -1,35 +1,88 @@
-# 网页输入法
+# ibus-qikai (启开手写识别)
 
-项目地址：https://github.com/kekxv/ibus-qikai
+`ibus-qikai` 是一个基于 **ONNX Runtime** 和 **PP-OCRv5** 模型构建的高性能、全离线手写识别库。它专为 Web 和 Node.js 环境设计，提供了从底层推理引擎到高层输入法 UI 的完整解决方案。
 
-来点友好的反馈：https://github.com/kekxv/ibus-qikai/issues
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg)](https://pnpm.io/)
 
+## ✨ 核心特性
 
-- 手写输入法
+- 🚀 **高性能推理**：基于百度 PaddleOCRv5 移动端识别模型，兼顾速度与精度。
+- 🌐 **全离线运行**：所有资源（模型、字典、WASM）均可本地化部署，无需联网即可秒开识别。
+- ⚡ **硬件加速**：自动检测并利用 **WebGPU**、WebGL 或 WASM SIMD 进行推理加速。
+- 🎯 **智能预处理**：内置自动去白边（Bounding Box）、等比例缩放和居中对齐，大幅提升非标准书写的识别率。
+- 🔍 **多候选支持**：支持返回 Top-K 候选结果及置信度评分，适合输入法集成场景。
+- 📦 **模块化设计**：采用 Monorepo 结构，逻辑与模型解耦，支持按需引用。
 
-> 借鉴了 https://github.com/microcai/ibus-handwrite 项目
+## 📂 软件包说明
 
-- 拼音输入法
+本项目包含以下三个主要 NPM 包：
 
-> https://github.com/kekxv/vue-pinyinKeyboard
-> 
-> 参考借鉴 ： https://github.com/sxei/pinyinjs
+| 包名 | 说明 |
+| :--- | :--- |
+| [`@ibus-qikai/core`](./packages/core) | **核心引擎**。包含图像预处理和 ONNX 推理逻辑，不含模型。 |
+| [`@ibus-qikai/models`](./packages/models) | **模型资源**。内置 PP-OCRv5 权重文件和常用汉字字典。 |
+| [`ibus-qikai`](./packages/ibus-qikai) | **聚合包**。封装了上述两者，提供开箱即用的简化 API。 |
 
-## 效果
+## 🚀 快速开始
 
-### 拼音
-```js
-console.log("pinyin:pin,", handwrite.pinyinmatch("pin"))
-// [Log] pinyin:pin, – "品贫聘频拼拚颦姘嫔榀牝"
-console.log("pinyin:yin,", handwrite.pinyinmatch("yin"))
-// [Log] pinyin:yin, – "因引银印音饮阴隐姻殷淫尹荫吟瘾寅茵圻垠鄞湮蚓氤胤龈窨喑铟洇狺夤廴吲霪茚堙"
+### 1. 安装
+
+```bash
+pnpm add ibus-qikai onnxruntime-web
 ```
 
-### 手写
+### 2. 基础用法 (Web)
 
-手写整体效果一般般，需要一笔一画的书写，且依赖顺序，后期考虑做笔划排序，以及笔划识别优化
+```typescript
+import { HandwritingInput } from 'ibus-qikai';
 
-> 目前手写是指定的宽度 size{width: 260,height: 260 - 60,}
+// 1. 初始化
+const input = new HandwritingInput({ topK: 10 });
+await input.init(); // 自动加载内置模型
 
-![shuo.png](https://github.com/kekxv/ibus-qikai/raw/main/assets/shuo.png)
-![zhang.png](https://github.com/kekxv/ibus-qikai/raw/main/assets/zhang.png)
+// 2. 识别 Canvas 内容
+const canvas = document.getElementById('myCanvas');
+const result = await input.recognize(canvas);
+
+console.log(result.candidates);
+// 输出示例: [{ character: '张', score: 0.98 }, { character: '長', score: 0.01 }, ...]
+```
+
+## 🤖 自动化流程 (CI/CD)
+
+项目集成了 GitHub Actions，支持以下流程：
+
+- **自动化测试**：每次推送代码都会在 Ubuntu 环境下运行核心库的单元测试。
+- **自动部署演示**：代码合并至 `main` 分支后，演示页面会自动更新到 GitHub Pages。
+- **自动发布包**：若提交信息包含 `release` 关键字（如 `feat: release version 1.0.1`），CI 会自动构建并发布包至 NPM。
+  - *注意*：需要在 GitHub 仓库的 Secrets 中配置 `NPM_TOKEN`。
+
+## 🛠 开发与调试
+
+如果你想在本地运行演示页面或参与开发：
+
+```bash
+# 安装依赖
+pnpm install
+
+# 启动本地演示页面 (Vite)
+pnpm demo:dev
+
+# 运行单元测试
+pnpm --filter @ibus-qikai/core test
+
+# 全量构建
+pnpm build
+```
+
+## 🌍 GitHub Pages 部署
+
+本项目已适配 GitHub Pages。构建后的 `demo/dist` 目录可直接部署至静态网站托管服务。它支持子路径部署，并能自动处理全离线资源的路径映射。
+
+## 📝 许可证
+
+本项目基于 [ISC License](./LICENSE) 开源。
+
+---
+*Powered by ibus-qikai & PaddleOCR*

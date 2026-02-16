@@ -1,0 +1,18 @@
+{
+  "name": "ibus-qikai-demo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ibus-qikai/core": "workspace:*",
+    "@ibus-qikai/models": "workspace:*",
+    "onnxruntime-web": "^1.20.0"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  }
+}

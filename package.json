@@ -1,23 +1,19 @@
 {
   "name": "ibus-qikai",
-  "version": "0.0.3",
-  "main": "src/index.js",
+  "private": true,
+  "description": "ibus-qikai: Handwriting OCR Input Method",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "build:watch": "vite build --watch",
-    "pushnpm": "npm publish --registry https://registry.npmjs.org"
+    "build": "pnpm -r build",
+    "demo:dev": "pnpm --filter ibus-qikai-demo dev",
+    "demo:build": "pnpm --filter ibus-qikai-demo build"
   },
-  "homepage": "https://github.com/kekxv/ibus-qikai",
-  "keywords": [
-    "pinyin",
-    "handwrite",
-    "web-ibus"
-  ],
-  "author": "QIKAI",
-  "license": "ISC",
-  "description": "",
+  "packageManager": "pnpm@10.28.2",
   "devDependencies": {
-    "vite": "^5.3.1"
+    "typescript": "^5.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "canvas"
+    ]
   }
 }

@@ -1,0 +1,10 @@
+packages:
+  - packages/*
+  - demo
+
+ignoredBuiltDependencies:
+  - canvas
+  - esbuild
+  - onnxruntime-node
+  - protobufjs
+  - unrs-resolver

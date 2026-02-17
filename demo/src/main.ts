@@ -6,6 +6,7 @@ ort.env.wasm.wasmPaths = (fileName: string) => `./libs/${fileName}`;
 ort.env.wasm.numThreads = 1;
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+const canvasContainer = document.getElementById('canvas-container')!;
 const ctx = canvas.getContext('2d')!;
 const display = document.getElementById('input-display')!;
 const candidateBar = document.getElementById('candidate-bar')!;
@@ -24,8 +25,13 @@ let recognitionTimer: any = null;
 async function init() {
     try {
         inputEngine = new HandwritingInput({ topK: 15 });
-        await inputEngine.init({ pathPrefix: './libs/' });
-        loader.style.display = 'none'; // 隐藏加载遮罩
+        // 初始化，显式传入资源路径
+        await inputEngine.init(
+            './libs/PP-OCRv5_rec_mobile_infer.onnx',
+            './libs/ppocrv5_dict.txt',
+            './libs/pinyin_dict.json'
+        );
+        loader.style.display = 'none'; 
         resizeCanvas();
     } catch (e) {
         document.getElementById('loader-text')!.innerText = '初始化失败: ' + (e as Error).message;
@@ -37,16 +43,21 @@ async function init() {
 tabs.forEach(tab => {
     tab.addEventListener('click', () => {
         tabs.forEach(t => t.classList.remove('active'));
-        panels.forEach(p => p.classList.remove('active')); 
         tab.classList.add('active');
+        
         const targetId = tab.getAttribute('data-target')!;
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
         document.getElementById(targetId)!.classList.add('active');
-        if (targetId === 'handwriting-panel') resizeCanvas();
+        
+        if (targetId === 'handwriting-panel') {
+            resizeCanvas();
+        } else {
+            pinyinIndicator.innerText = currentPinyin || '请点击下方键盘输入拼音';
+        }
     });
 });
 
-// 键盘逻辑
+// 虚拟键盘逻辑
 document.getElementById('keyboard')!.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     if (!target.classList.contains('key')) return;
@@ -54,10 +65,10 @@ document.getElementById('keyboard')!.addEventListener('click', (e) => {
     const key = target.innerText.toLowerCase();
     if (key === 'space') {
         confirmChar(' ');
-    } else if (key === '退格') {
+    } else if (target.id === 'kb-back' || key === '退格') {
         currentPinyin = currentPinyin.slice(0, -1);
         updatePinyinSearch();
-    } else if (key === '清空') {
+    } else if (target.id === 'kb-clear' || key === '清空') {
         currentPinyin = '';
         updatePinyinSearch();
     } else if (key.length === 1) {
@@ -67,7 +78,7 @@ document.getElementById('keyboard')!.addEventListener('click', (e) => {
 });
 
 function updatePinyinSearch() {
-    pinyinIndicator.innerText = currentPinyin;
+    pinyinIndicator.innerText = currentPinyin || '等待输入...';
     if (currentPinyin) {
         const candidates = inputEngine.matchPinyin(currentPinyin);
         renderCandidates(candidates, true);
@@ -76,7 +87,7 @@ function updatePinyinSearch() {
     }
 }
 
-// 画布逻辑
+// 手写画布样式与逻辑
 function setupCanvasStyle() {
     ctx.lineWidth = 14;
     ctx.lineJoin = 'round';
@@ -103,11 +114,17 @@ function getCoords(e: any) {
 
 const startDrawing = (e: any) => {
     isDrawing = true;
+    canvasContainer.classList.add('active');
     const {x, y} = getCoords(e);
     ctx.beginPath();
     ctx.moveTo(x, y);
     clearTimeout(recognitionTimer);
-    if (currentPinyin) { currentPinyin = ''; updatePinyinSearch(); }
+    
+    // 手写时清空拼音状态
+    if (currentPinyin) { 
+        currentPinyin = ''; 
+        pinyinIndicator.innerText = '';
+    }
 };
 
 const draw = (e: any) => {
@@ -120,6 +137,8 @@ const draw = (e: any) => {
 const stopDrawing = () => {
     if (!isDrawing) return;
     isDrawing = false;
+    canvasContainer.classList.remove('active');
+    
     recognitionTimer = setTimeout(async () => {
         const result = await inputEngine.recognize(canvas);
         renderCandidates(result.candidates);
@@ -133,21 +152,28 @@ canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(
 canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
 canvas.addEventListener('touchend', stopDrawing);
 
-// 候选词处理
+// 渲染候选词
 function renderCandidates(candidates: any[], isPinyin = false) {
     candidateBar.innerHTML = '';
     if (candidates.length === 0) {
-        candidateBar.innerHTML = `<span style="color:#ccc;margin:auto;font-size:14px">${isPinyin?'无匹配':'未识别'}</span>`;
+        candidateBar.innerHTML = `<span style="color:#ccc;margin:auto;font-size:14px">${isPinyin ? '无匹配字符' : '未检测到内容'}</span>`;
         return;
     }
+    
     candidates.forEach(c => {
         const div = document.createElement('div');
         div.className = 'candidate-item';
         div.innerText = c.character;
+        if (!isPinyin) div.title = `匹配度: ${(c.score * 100).toFixed(1)}%`;
+        
         div.onclick = () => {
             confirmChar(c.character);
-            if (isPinyin) { currentPinyin = ''; updatePinyinSearch(); }
+            if (isPinyin) { 
+                currentPinyin = ''; 
+                updatePinyinSearch(); 
+            }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            candidateBar.innerHTML = '';
         };
         candidateBar.appendChild(div);
     });
@@ -158,7 +184,7 @@ function confirmChar(char: string) {
     display.innerText = currentText + '|';
 }
 
-// 底部操作
+// 底部功能键
 document.getElementById('clearAllBtn')!.onclick = () => {
     currentText = '';
     currentPinyin = '';
@@ -169,8 +195,11 @@ document.getElementById('clearAllBtn')!.onclick = () => {
 };
 
 document.getElementById('copyBtn')!.onclick = () => {
+    if (!currentText) return;
     navigator.clipboard.writeText(currentText);
-    alert('文本已复制');
+    const oldText = copyBtn.innerText;
+    copyBtn.innerText = '已复制!';
+    setTimeout(() => { copyBtn.innerText = oldText; }, 1500);
 };
 
 window.addEventListener('resize', resizeCanvas);

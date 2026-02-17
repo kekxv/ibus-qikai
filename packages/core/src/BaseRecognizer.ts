@@ -11,10 +11,10 @@ export abstract class BaseRecognizer {
   // 子类需要实现的初始化字典方法
   abstract init(modelPath: string, options?: any): Promise<void>;
 
-  protected async loadDictFromContent(content: string) {
+  protected async loadDictFromContent(content: string, dictPath: string) {
     if (content.includes('<html') || content.includes('<!DOCTYPE')) {
-      console.error('字典内容非法 (HTML):', content.substring(0, 200));
-      throw new Error('字典加载失败：返回内容似乎是 HTML 页面，请检查 dictPath 路径。');
+      console.error(`字典内容非法 (HTML): ${dictPath}`, content.substring(0, 200));
+      throw new Error(`字典加载失败：路径 "${dictPath}" 返回了 HTML 页面而非文本。请检查路径配置是否指向了正确的 .txt 文件。`);
     }
     this.dictionary = ['', ...content.split(/\r?\n/)];
   }

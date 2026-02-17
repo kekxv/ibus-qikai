@@ -34,7 +34,7 @@ export default defineConfig({
     }
   ],
   optimizeDeps: {
-    exclude: ['onnxruntime-web']
+    exclude: ['onnxruntime-web', 'ibus-qikai', '@ibus-qikai/core', '@ibus-qikai/models']
   },
   server: {
     fs: {

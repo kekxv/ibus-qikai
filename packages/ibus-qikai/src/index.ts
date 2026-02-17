@@ -15,20 +15,15 @@ export class HandwritingInput {
 
   /**
    * 初始化识别引擎
-   * @param options 路径配置
+   * @param modelPath 手动指定 ONNX 模型路径
+   * @param dictPath 手动指定汉字字典 (.txt) 路径
+   * @param pinyinDictPath 手动指定拼音字典 (.json) 路径
    */
-  async init(options: { 
-    modelPath?: string; 
-    dictPath?: string; 
-    pinyinDictPath?: string;
-    pathPrefix?: string;
-  } = {}) {
-    const prefix = options.pathPrefix || '';
-    
-    // 如果没有传具体路径，则使用默认文件名拼接前缀
-    const finalModelPath = options.modelPath || (prefix + models.modelPath);
-    const finalDictPath = options.dictPath || (prefix + models.dictPath);
-    const finalPinyinDictPath = options.pinyinDictPath || (prefix + models.pinyinDictPath);
+  async init(modelPath?: string, dictPath?: string, pinyinDictPath?: string) {
+    // 默认使用项目内置的文件名
+    const finalModelPath = modelPath || models.modelPath;
+    const finalDictPath = dictPath || models.dictPath;
+    const finalPinyinDictPath = pinyinDictPath || models.pinyinDictPath;
 
     this.recognizer = new RecognizerWeb({
       dictPath: finalDictPath,

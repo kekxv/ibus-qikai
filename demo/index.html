@@ -37,7 +37,8 @@
         .panel.active { display: block; }
 
         /* Handwriting Panel */
-        #canvas-container { width: 100%; aspect-ratio: 1.5 / 1; background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; touch-action: none; position: relative; }
+        #canvas-container { width: 100%; aspect-ratio: 1.5 / 1; background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; touch-action: none; position: relative; transition: border-color 0.3s, box-shadow 0.3s; }
+        #canvas-container.active { border-color: var(--primary); box-shadow: 0 0 8px rgba(0,122,255,0.2); }
         canvas { width: 100%; height: 100%; }
 
         /* Keyboard Panel */

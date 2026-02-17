@@ -41,7 +41,7 @@ class TestRecognizer extends BaseRecognizer {
     // 模拟初始化
   }
   public async testLoadDict(content: string) {
-    return this.loadDictFromContent(content);
+    return this.loadDictFromContent(content, 'test.txt');
   }
   public testGetPreprocessingCanvas(canvas: any) {
     return this.getPreprocessingCanvas(canvas);

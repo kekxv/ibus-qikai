@@ -39,9 +39,12 @@ import { HandwritingInput } from 'ibus-qikai';
 
 // 1. 初始化引擎
 const input = new HandwritingInput({ topK: 10 });
-await input.init({
-  pathPrefix: '/libs/' // 指定你的离线模型与字典存储目录
-});
+// 支持手动指定模型、字典、拼音路径，不传则使用默认文件名
+await input.init(
+  '/path/to/model.onnx',
+  '/path/to/dict.txt',
+  '/path/to/pinyin.json'
+);
 
 // 2. 手写识别 (传入 Canvas 元素)
 const canvas = document.getElementById('myCanvas');

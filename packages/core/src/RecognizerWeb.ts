@@ -19,7 +19,7 @@ export class HandwritingRecognizerWeb extends BaseRecognizer {
       throw new Error(`汉字词典请求失败: ${res.status} ${res.statusText} (路径: ${this.dictPath})`);
     }
     const text = await res.text();
-    await this.loadDictFromContent(text);
+    await this.loadDictFromContent(text, this.dictPath);
 
     // 加载模型
     console.log(`正在加载 ONNX 模型: ${modelPath}`);

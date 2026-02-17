@@ -1,6 +1,6 @@
 {
   "name": "@ibus-qikai/core",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Handwriting recognition core using ONNX runtime for Web.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

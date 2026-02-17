@@ -1,6 +1,7 @@
 {
   "name": "@ibus-qikai/models",
   "version": "0.1.0",
+  "type": "module",
   "description": "Models for handwriting-ocr",
   "files": ["assets", "index.d.ts"],
   "main": "index.js",

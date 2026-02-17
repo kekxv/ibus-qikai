@@ -12,6 +12,10 @@ export abstract class BaseRecognizer {
   abstract init(modelPath: string, options?: any): Promise<void>;
 
   protected async loadDictFromContent(content: string) {
+    if (content.includes('<html') || content.includes('<!DOCTYPE')) {
+      console.error('字典内容非法 (HTML):', content.substring(0, 200));
+      throw new Error('字典加载失败：返回内容似乎是 HTML 页面，请检查 dictPath 路径。');
+    }
     this.dictionary = ['', ...content.split(/\r?\n/)];
   }
 

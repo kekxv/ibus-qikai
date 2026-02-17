@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "ibus-qikai": "workspace:*",
     "@ibus-qikai/core": "workspace:*",
     "@ibus-qikai/models": "workspace:*",
     "onnxruntime-web": "^1.20.0"

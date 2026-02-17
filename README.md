@@ -1,6 +1,6 @@
 # ibus-qikai (启开手写识别)
 
-`ibus-qikai` 是一个基于 **ONNX Runtime** 和 **PP-OCRv5** 模型构建的高性能、全离线手写识别库。它专为 Web 和 Node.js 环境设计，提供了从底层推理引擎到高层输入法 UI 的完整解决方案。
+`ibus-qikai` 是一个基于 **ONNX Runtime** 和 **PP-OCRv5** 模型构建的高性能、全离线手写识别库。它专为 Web 环境设计，提供了从图像预处理、拼音检索到输入法 UI 的完整解决方案。
 
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 [![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg)](https://pnpm.io/)
@@ -8,21 +8,21 @@
 ## ✨ 核心特性
 
 - 🚀 **高性能推理**：基于百度 PaddleOCRv5 移动端识别模型，兼顾速度与精度。
-- 🌐 **全离线运行**：所有资源（模型、字典、WASM）均可本地化部署，无需联网即可秒开识别。
+- 🌐 **全离线运行**：所有资源（模型、字典、WASM）均可本地化部署，无需联网。
 - ⚡ **硬件加速**：自动检测并利用 **WebGPU**、WebGL 或 WASM SIMD 进行推理加速。
-- 🎯 **智能预处理**：内置自动去白边（Bounding Box）、等比例缩放和居中对齐，大幅提升非标准书写的识别率。
-- 🔍 **多候选支持**：支持返回 Top-K 候选结果及置信度评分，适合输入法集成场景。
-- 📦 **模块化设计**：采用 Monorepo 结构，逻辑与模型解耦，支持按需引用。
+- 🎯 **智能预处理**：内置自动去白边（Bounding Box）、等比例缩放和居中对齐，支持任意位置书写且无坐标偏移。
+- 🔍 **混合输入模式**：
+  - **手写输入**：支持多候选结果及置信度评分。
+  - **拼音输入**：内置拼音词典匹配，支持通过拼音查找汉字。
+- 📦 **工业级架构**：Monorepo 结构，支持 NPM 按需安装，逻辑与资源分离。
 
 ## 📂 软件包说明
 
-本项目包含以下三个主要 NPM 包：
-
 | 包名 | 说明 |
 | :--- | :--- |
-| [`@ibus-qikai/core`](./packages/core) | **核心引擎**。包含图像预处理和 ONNX 推理逻辑，不含模型。 |
-| [`@ibus-qikai/models`](./packages/models) | **模型资源**。内置 PP-OCRv5 权重文件和常用汉字字典。 |
-| [`ibus-qikai`](./packages/ibus-qikai) | **聚合包**。封装了上述两者，提供开箱即用的简化 API。 |
+| [`@ibus-qikai/core`](./packages/core) | **核心引擎**。包含图像预处理、拼音匹配和 ONNX 推理逻辑。 |
+| [`@ibus-qikai/models`](./packages/models) | **离线资源**。内置 PP-OCRv5 模型、汉字字典及拼音映射表。 |
+| [`ibus-qikai`](./packages/ibus-qikai) | **开箱即用聚合包**。封装了逻辑与默认模型，极简 API。 |
 
 ## 🚀 快速开始
 
@@ -37,48 +37,40 @@ pnpm add ibus-qikai onnxruntime-web
 ```typescript
 import { HandwritingInput } from 'ibus-qikai';
 
-// 1. 初始化
+// 1. 初始化引擎
 const input = new HandwritingInput({ topK: 10 });
-await input.init(); // 自动加载内置模型
+await input.init({
+  pathPrefix: '/libs/' // 指定你的离线模型与字典存储目录
+});
 
-// 2. 识别 Canvas 内容
+// 2. 手写识别 (传入 Canvas 元素)
 const canvas = document.getElementById('myCanvas');
 const result = await input.recognize(canvas);
-
 console.log(result.candidates);
-// 输出示例: [{ character: '张', score: 0.98 }, { character: '長', score: 0.01 }, ...]
+
+// 3. 拼音匹配
+const pinyinCandidates = input.matchPinyin('pin');
+console.log(pinyinCandidates); 
 ```
 
-## 🤖 自动化流程 (CI/CD)
+## 🛠 开发与部署
 
-项目集成了 GitHub Actions，支持以下流程：
-
-- **自动化测试**：每次推送代码都会在 Ubuntu 环境下运行核心库的单元测试。
-- **自动部署演示**：代码合并至 `main` 分支后，演示页面会自动更新到 GitHub Pages。
-- **自动发布包**：若提交信息包含 `release` 关键字（如 `feat: release version 1.0.1`），CI 会自动构建并发布包至 NPM。
-  - *注意*：需要在 GitHub 仓库的 Secrets 中配置 `NPM_TOKEN`。
-
-## 🛠 开发与调试
-
-如果你想在本地运行演示页面或参与开发：
-
+### 本地调试
 ```bash
-# 安装依赖
 pnpm install
-
-# 启动本地演示页面 (Vite)
-pnpm demo:dev
-
-# 运行单元测试
-pnpm --filter @ibus-qikai/core test
-
-# 全量构建
-pnpm build
+pnpm demo:dev  # 启动拼音+手写混合输入演示页面
 ```
 
-## 🌍 GitHub Pages 部署
+### 自动化流程 (CI/CD)
+- **单元测试**：`pnpm --filter @ibus-qikai/core test` 验证算法。
+- **自动部署**：代码合并至 `main` 后，Demo 自动部署至 GitHub Pages。
+- **自动发布**：提交信息含 `release` 关键字时，自动发布包至 NPM。
 
-本项目已适配 GitHub Pages。构建后的 `demo/dist` 目录可直接部署至静态网站托管服务。它支持子路径部署，并能自动处理全离线资源的路径映射。
+## 🌍 GitHub Pages 部署注意
+
+构建产物位于 `demo/dist`。由于使用了 ONNX Runtime，部署时需确保：
+1. `libs/` 目录下的 `.wasm` 和 `.mjs` 文件被正确托管。
+2. 配置好 `wasmPaths`（Demo 已内置动态路径计算逻辑）。
 
 ## 📝 许可证
 

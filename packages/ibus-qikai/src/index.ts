@@ -1,34 +1,52 @@
-import { HandwritingRecognizerWeb as RecognizerWeb } from '@ibus-qikai/core';
+import { HandwritingRecognizerWeb as RecognizerWeb, PinyinMatch } from '@ibus-qikai/core';
 import models from '@ibus-qikai/models';
 
 export * from '@ibus-qikai/core';
 
 export class HandwritingInput {
-  private recognizer: RecognizerWeb;
+  private recognizer: RecognizerWeb | null = null;
+  private pinyinMatcher: PinyinMatch;
+  private topK: number;
 
-  /**
-   * 创建一个集成了默认模型的手写识别实例
-   * @param options 可选的覆盖配置（如 topK）
-   */
   constructor(options: { topK?: number } = {}) {
+    this.topK = options.topK || 10;
+    this.pinyinMatcher = new PinyinMatch();
+  }
+
+  /**
+   * 初始化识别引擎
+   * @param options 路径配置
+   */
+  async init(options: { 
+    modelPath?: string; 
+    dictPath?: string; 
+    pinyinDictPath?: string;
+    pathPrefix?: string;
+  } = {}) {
+    const prefix = options.pathPrefix || '';
+    
+    // 如果没有传具体路径，则使用默认文件名拼接前缀
+    const finalModelPath = options.modelPath || (prefix + models.modelPath);
+    const finalDictPath = options.dictPath || (prefix + models.dictPath);
+    const finalPinyinDictPath = options.pinyinDictPath || (prefix + models.pinyinDictPath);
+
     this.recognizer = new RecognizerWeb({
-      dictPath: models.dictPath,
-      topK: options.topK || 10
+      dictPath: finalDictPath,
+      topK: this.topK
     });
+
+    await Promise.all([
+      this.recognizer.init(finalModelPath),
+      this.pinyinMatcher.init(finalPinyinDictPath)
+    ]);
   }
 
-  /**
-   * 初始化识别引擎（加载模型和字典）
-   * @param modelPath 可选：覆盖默认模型路径
-   */
-  async init(modelPath?: string) {
-    await this.recognizer.init(modelPath || models.modelPath);
-  }
-
-  /**
-   * 识别 Canvas 上的手写字符
-   */
   async recognize(canvas: HTMLCanvasElement) {
+    if (!this.recognizer) throw new Error('Call init() first');
     return this.recognizer.recognize(canvas);
+  }
+
+  matchPinyin(pinyin: string) {
+    return this.pinyinMatcher.match(pinyin);
   }
 }

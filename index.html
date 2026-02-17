@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ibus-qikai</title>
+    <style>
+        :root { --primary-color: #007aff; --bg-gray: #f2f2f7; --border-color: #d1d1d6; }
+        body { font-family: -apple-system, sans-serif; margin: 0; padding: 20px; background: var(--bg-gray); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; color: #1c1c1e; }
+        
+        .widget-container { background: white; width: 100%; max-width: 400px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        h2 { margin: 0 0 8px 0; font-size: 18px; text-align: center; color: #3a3a3c; }
+
+        /* 输入展示区 */
+        #input-display { background: var(--bg-gray); border: 1px solid var(--border-color); padding: 12px; font-size: 20px; min-height: 28px; border-radius: 10px; word-break: break-all; color: #000; font-family: monospace; }
+
+        /* 候选词条 */
+        #candidate-bar { display: flex; overflow-x: auto; background: white; border: 1px solid var(--border-color); padding: 4px; border-radius: 10px; min-height: 44px; white-space: nowrap; scrollbar-width: none; gap: 4px; }
+        #candidate-bar::-webkit-scrollbar { display: none; }
+        .candidate-item { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 40px; font-size: 20px; cursor: pointer; border-radius: 6px; transition: background 0.2s; }
+        .candidate-item:hover { background: #e5e5ea; }
+        .candidate-item:active { background: #d1d1d6; color: var(--primary-color); }
+
+        /* 画布区 */
+        #canvas-container { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #fff; border: 2px solid #3a3a3c; border-radius: 12px; overflow: hidden; touch-action: none; cursor: crosshair; }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* 控制栏 */
+        .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        button { padding: 10px 0; font-size: 14px; font-weight: 500; border: none; border-radius: 8px; background: #e5e5ea; color: #1c1c1e; transition: all 0.2s; cursor: pointer; }
+        button:active { transform: scale(0.96); opacity: 0.8; }
+        button.primary { background: var(--primary-color); color: white; }
+        
+        .footer { font-size: 12px; color: #8e8e93; text-align: center; margin-top: 10px; }
+    </style>
+  <script type="module" crossorigin src="./assets/index-XTKFRQ-3.js"></script>
+</head>
+<body>
+    <div class="widget-container">
+        <h2>ibus-qikai</h2>
+        
+        <div id="input-display">|</div>
+        
+        <div id="candidate-bar">
+            <span style="color: #c7c7cc; font-size: 14px; margin: auto;">等待手写输入...</span>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <button id="clearBtn">清除</button>
+            <button id="backspaceBtn">退格</button>
+            <button id="spaceBtn">空格</button>
+            <button id="copyBtn" class="primary">复制</button>
+        </div>
+
+        <div class="footer">
+            Powered by ibus-qikai (PP-OCRv5)
+        </div>
+    </div>
+
+</body>
+</html>

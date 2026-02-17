@@ -4,19 +4,20 @@ import { RecognitionResult, RecognizerOptions } from './types';
 
 export class HandwritingRecognizerWeb extends BaseRecognizer {
   private session: ort.InferenceSession | null = null;
+  private dictPath: string;
 
   constructor(options: RecognizerOptions) {
     super(options);
-    this.initDict(options.dictPath);
-  }
-
-  private async initDict(path: string) {
-    const res = await fetch(path);
-    const text = await res.text();
-    await this.loadDictFromContent(text);
+    this.dictPath = options.dictPath;
   }
 
   async init(modelPath: string, options: ort.InferenceSession.SessionOptions = {}) {
+    // 加载词典
+    const res = await fetch(this.dictPath);
+    const text = await res.text();
+    await this.loadDictFromContent(text);
+
+    // 加载模型
     this.session = await ort.InferenceSession.create(modelPath, {
       executionProviders: ['webgpu', 'webgl', 'wasm'],
       ...options

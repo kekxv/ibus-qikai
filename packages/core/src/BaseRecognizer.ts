@@ -8,6 +8,9 @@ export abstract class BaseRecognizer {
     this.topK = options.topK || 10;
   }
 
+  // 子类需要实现的初始化字典方法
+  abstract init(modelPath: string, options?: any): Promise<void>;
+
   protected async loadDictFromContent(content: string) {
     this.dictionary = ['', ...content.split(/\r?\n/)];
   }

@@ -18,7 +18,7 @@ export class HandwritingInput {
   }
 
   /**
-   * 初始化识别引擎（加载模型）
+   * 初始化识别引擎（加载模型和字典）
    * @param modelPath 可选：覆盖默认模型路径
    */
   async init(modelPath?: string) {

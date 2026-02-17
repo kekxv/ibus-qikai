@@ -22,7 +22,7 @@ export abstract class BaseRecognizer {
   protected getPreprocessingCanvas(source: HTMLCanvasElement): { data: Float32Array; width: number; height: number } {
     const box = this.getBoundingBox(source);
     const imgH = 48;
-    const imgW = 128;
+    const imgW = 128; // 降低宽度到 128，单字符绰绰有余，且能极大减少内存压力
     
     const offscreen = document.createElement('canvas');
     offscreen.width = imgW;
@@ -66,8 +66,9 @@ export abstract class BaseRecognizer {
     const data = imageData.data;
     let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
     let hasContent = false;
-    for (let y = 0; y < canvas.height; y++) {
-      for (let x = 0; x < canvas.width; x++) {
+    // 步进扫描 (Step 2) 以加速高分屏下的像素检测
+    for (let y = 0; y < canvas.height; y += 2) {
+      for (let x = 0; x < canvas.width; x += 2) {
         if (data[(y * canvas.width + x) * 4 + 3]! > 0) {
           if (x < minX) minX = x;
           if (x > maxX) maxX = x;

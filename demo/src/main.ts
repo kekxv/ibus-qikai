@@ -19,6 +19,7 @@ let inputEngine: HandwritingInput;
 let currentText = '';
 let currentPinyin = '';
 let isDrawing = false;
+let recognitionController: AbortController | null = null; // 用于取消上次识别
 let recognitionTimer: any = null;
 
 // 初始化引擎
@@ -139,9 +140,30 @@ const stopDrawing = () => {
     isDrawing = false;
     canvasContainer.classList.remove('active');
     
+    // 准备新的识别任务，设置延时 500ms 触发
     recognitionTimer = setTimeout(async () => {
-        const result = await inputEngine.recognize(canvas);
-        renderCandidates(result.candidates);
+        // 1. 如果有正在进行的识别，立即取消它
+        if (recognitionController) {
+            recognitionController.abort();
+        }
+        
+        // 2. 创建新的控制器
+        recognitionController = new AbortController();
+        const signal = recognitionController.signal;
+
+        try {
+            const result = await inputEngine.recognize(canvas, signal);
+            renderCandidates(result.candidates);
+        } catch (e: any) {
+            // 如果是取消导致的错误，不打印
+            if (e.message !== 'Aborted') {
+                console.error('识别出错:', e);
+            }
+        } finally {
+            if (recognitionController?.signal === signal) {
+                recognitionController = null;
+            }
+        }
     }, 500);
 };
 

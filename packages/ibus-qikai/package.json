@@ -1,6 +1,6 @@
 {
   "name": "ibus-qikai",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Simplified handwriting recognition library including default models.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

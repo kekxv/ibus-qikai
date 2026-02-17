@@ -36,9 +36,9 @@ export class HandwritingInput {
     ]);
   }
 
-  async recognize(canvas: HTMLCanvasElement) {
+  async recognize(canvas: HTMLCanvasElement, signal?: AbortSignal) {
     if (!this.recognizer) throw new Error('Call init() first');
-    return this.recognizer.recognize(canvas);
+    return this.recognizer.recognize(canvas, signal);
   }
 
   matchPinyin(pinyin: string) {

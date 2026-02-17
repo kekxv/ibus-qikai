@@ -18,7 +18,7 @@ const createMockCanvas = (width: number, height: number) => {
     fillStyle: '',
     fillRect: jest.fn(),
     drawImage: jest.fn(),
-    getImageData: jest.fn((x, y, w, h) => new MockImageData(w, h)),
+    getImageData: jest.fn((x: number, y: number, w: number, h: number) => new MockImageData(w, h)),
   };
   return {
     width,
@@ -30,13 +30,16 @@ const createMockCanvas = (width: number, height: number) => {
 // 全局 Mock
 (globalThis as any).ImageData = MockImageData;
 (globalThis as any).document = {
-  createElement: jest.fn((type) => {
+  createElement: jest.fn((type: string) => {
     if (type === 'canvas') return createMockCanvas(128, 48);
     return {};
   }),
 };
 
 class TestRecognizer extends BaseRecognizer {
+  public async init(modelPath: string) {
+    // 模拟初始化
+  }
   public async testLoadDict(content: string) {
     return this.loadDictFromContent(content);
   }

@@ -8,12 +8,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "ibus-qikai": "workspace:*",
     "@ibus-qikai/core": "workspace:*",
     "@ibus-qikai/models": "workspace:*",
-    "onnxruntime-web": "^1.20.0"
+    "ibus-qikai": "workspace:*",
+    "onnxruntime-web": "^1.20.0",
+    "vue": "^3.5.28"
   },
   "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.4",
     "vite": "^7.0.0"
   }
 }

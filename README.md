@@ -1,4 +1,4 @@
-# ibus-qikai (启开手写识别)
+# ibus-qikai (拼音、手写识别)
 
 `ibus-qikai` 是一个基于 **ONNX Runtime** 和 **PP-OCRv5** 模型构建的高性能、全离线手写识别库。它专为 Web 环境设计，提供了从图像预处理、拼音检索到输入法 UI 的完整解决方案。
 

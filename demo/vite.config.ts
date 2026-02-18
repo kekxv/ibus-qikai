@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
 import { join } from 'path';
 import fs from 'fs';
 
@@ -6,6 +7,7 @@ export default defineConfig({
   base: './',
   publicDir: 'public',
   plugins: [
+    vue(),
     {
       name: 'copy-assets',
       configResolved() {

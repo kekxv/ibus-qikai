@@ -34,10 +34,12 @@ export abstract class BaseRecognizer {
     this.dictionary = ['', ...content.split(/\r?\n/)];
   }
 
-  protected getPreprocessingCanvas(source: HTMLCanvasElement): { data: Float32Array; width: number; height: number } {
-    const box = this.getBoundingBox(source);
+  protected getPreprocessingCanvas(source: HTMLCanvasElement, signal?: AbortSignal): { data: Float32Array; width: number; height: number } {
+    const box = this.getBoundingBox(source, signal);
     const imgH = 48;
     const imgW = 128; // 降低宽度到 128，单字符绰绰有余，且能极大减少内存压力
+
+    if (signal?.aborted) throw new Error('Aborted');
 
     if (!this.offscreenCanvas) {
       this.offscreenCanvas = document.createElement('canvas');
@@ -62,6 +64,8 @@ export abstract class BaseRecognizer {
       ctx.drawImage(source, box.x, box.y, box.w, box.h, dx, dy, drawW, drawH);
     }
 
+    if (signal?.aborted) throw new Error('Aborted');
+
     const imageData = ctx.getImageData(0, 0, imgW, imgH);
     const { data } = imageData;
     
@@ -83,16 +87,26 @@ export abstract class BaseRecognizer {
     return { data: floatData, width: imgW, height: imgH };
   }
 
-  private getBoundingBox(canvas: HTMLCanvasElement) {
+  private getBoundingBox(canvas: HTMLCanvasElement, signal?: AbortSignal) {
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    
+    // 限制读取范围以减少内存消耗，尤其是针对极大的画布
+    const scanW = canvas.width;
+    const scanH = canvas.height;
+    
+    const imageData = ctx.getImageData(0, 0, scanW, scanH);
     const data = imageData.data;
-    let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+    let minX = scanW, minY = scanH, maxX = 0, maxY = 0;
     let hasContent = false;
-    // 步进扫描 (Step 2) 以加速高分屏下的像素检测
-    for (let y = 0; y < canvas.height; y += 2) {
-      for (let x = 0; x < canvas.width; x += 2) {
-        if (data[(y * canvas.width + x) * 4 + 3]! > 0) {
+    
+    // 步进扫描以加速检测，且在高分屏下非常必要
+    const step = 4; // 增加步长到 4 以进一步提升速度和降低处理负担
+    for (let y = 0; y < scanH; y += step) {
+      // 每一行扫描检查一次中断信号，确保极速响应
+      if (y % (step * 5) === 0 && signal?.aborted) throw new Error('Aborted');
+
+      for (let x = 0; x < scanW; x += step) {
+        if (data[(y * scanW + x) * 4 + 3]! > 0) {
           if (x < minX) minX = x;
           if (x > maxX) maxX = x;
           if (y < minY) minY = y;

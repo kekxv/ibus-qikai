@@ -15,6 +15,7 @@ const currentPinyin = ref('');
 const candidates = ref<any[]>([]);
 const isPinyinMode = ref(false);
 const isDrawing = ref(false);
+const isRecognizing = ref(false);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const containerRef = ref<HTMLElement | null>(null);
 
@@ -86,6 +87,14 @@ const getCoords = (e: MouseEvent | TouchEvent) => {
 
 const startDrawing = (e: MouseEvent | TouchEvent) => {
   if (activeTab.value !== 'handwriting' || !ctx) return;
+
+  // 如果当前正在推理，立即中断它
+  if (recognitionController) {
+    recognitionController.abort();
+    recognitionController = null;
+  }
+  isRecognizing.value = false;
+
   isDrawing.value = true;
   const { x, y } = getCoords(e);
   ctx.beginPath();
@@ -116,13 +125,18 @@ const stopDrawing = () => {
 
     try {
       if (!canvasRef.value) return;
+      isRecognizing.value = true;
       const result = await inputEngine.recognize(canvasRef.value, signal);
       candidates.value = result.candidates;
       isPinyinMode.value = false;
     } catch (e: any) {
       if (e.message !== 'Aborted') console.error('识别出错:', e);
+    } finally {
+      if (!signal.aborted) {
+        isRecognizing.value = false;
+      }
     }
-  }, 500);
+  }, 300);
 };
 
 // Pinyin logic
@@ -213,7 +227,12 @@ const kbRows = [
       </div>
 
       <div class="candidate-bar" :class="{ empty: candidates.length === 0 }">
-        <template v-if="candidates.length > 0">
+        <template v-if="isRecognizing">
+          <div class="empty-hint recognizer-hint">
+            <span class="mini-spinner"></span> 正在识别...
+          </div>
+        </template>
+        <template v-else-if="candidates.length > 0">
           <div 
             v-for="c in candidates" 
             :key="c.character" 
@@ -630,5 +649,22 @@ canvas {
 .loader-text {
   font-size: 15px;
   color: var(--text-secondary);
+}
+
+.mini-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.recognizer-hint {
+  color: var(--primary);
+  font-weight: 500;
 }
 </style>

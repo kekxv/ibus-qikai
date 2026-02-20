@@ -38,7 +38,7 @@ export class HandwritingRecognizerWeb extends BaseRecognizer {
   async recognize(canvas: HTMLCanvasElement, signal?: AbortSignal): Promise<RecognitionResult> {
     if (!this.session) throw new Error('Session not initialized');
     
-    const { data, width, height } = this.getPreprocessingCanvas(canvas);
+    const { data, width, height } = this.getPreprocessingCanvas(canvas, signal);
     
     // 如果在预处理后已经取消，直接抛出
     if (signal?.aborted) throw new Error('Aborted');

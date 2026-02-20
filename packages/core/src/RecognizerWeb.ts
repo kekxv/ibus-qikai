@@ -45,13 +45,40 @@ export class HandwritingRecognizerWeb extends BaseRecognizer {
 
     const tensor = new ort.Tensor('float32', data, [1, 3, height, width]);
     
-    // 执行推理
-    const results = await this.session.run({ [this.session.inputNames[0]!]: tensor });
-    
-    // 推理结束后检查信号，防止耗时的后处理继续执行
-    if (signal?.aborted) throw new Error('Aborted');
+    try {
+      // 执行推理
+      const results = await this.session.run({ [this.session.inputNames[0]!]: tensor });
+      
+      // 推理结束后检查信号，防止耗时的后处理继续执行
+      if (signal?.aborted) throw new Error('Aborted');
 
-    const output = results[this.session.outputNames[0]!];
-    return this.postProcess(output!.data as Float32Array, output!.dims as number[]);
+      const output = results[this.session.outputNames[0]!];
+      const result = this.postProcess(output!.data as Float32Array, output!.dims as number[]);
+
+      // 显式释放所有输出 Tensor
+      for (const key in results) {
+        results[key]?.dispose();
+      }
+
+      return result;
+    } finally {
+      // 显式释放输入 Tensor
+      tensor.dispose();
+    }
+  }
+
+  /**
+   * 释放资源，包括关闭 ONNX 会话
+   */
+  async dispose() {
+    super.dispose();
+    if (this.session) {
+      try {
+        await (this.session as any).release();
+      } catch (e) {
+        console.error('释放 ONNX 会话失败:', e);
+      }
+      this.session = null;
+    }
   }
 }

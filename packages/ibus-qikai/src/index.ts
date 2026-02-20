@@ -25,6 +25,10 @@ export class HandwritingInput {
     const finalDictPath = dictPath || models.dictPath;
     const finalPinyinDictPath = pinyinDictPath || models.pinyinDictPath;
 
+    if (this.recognizer) {
+      await this.recognizer.dispose();
+    }
+
     this.recognizer = new RecognizerWeb({
       dictPath: finalDictPath,
       topK: this.topK
@@ -34,6 +38,16 @@ export class HandwritingInput {
       this.recognizer.init(finalModelPath),
       this.pinyinMatcher.init(finalPinyinDictPath)
     ]);
+  }
+
+  /**
+   * 释放资源
+   */
+  async dispose() {
+    if (this.recognizer) {
+      await this.recognizer.dispose();
+      this.recognizer = null;
+    }
   }
 
   async recognize(canvas: HTMLCanvasElement, signal?: AbortSignal) {

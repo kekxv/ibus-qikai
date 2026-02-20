@@ -43,8 +43,11 @@ onMounted(async () => {
   window.addEventListener('resize', handleResize);
 });
 
-onUnmounted(() => {
+onUnmounted(async () => {
   window.removeEventListener('resize', handleResize);
+  if (inputEngine) {
+    await inputEngine.dispose();
+  }
 });
 
 // Canvas logic

@@ -4,12 +4,27 @@ export abstract class BaseRecognizer {
   protected dictionary: string[] = [];
   protected topK: number;
 
+  // 用于复用的离线画布和缓冲区
+  private offscreenCanvas: HTMLCanvasElement | null = null;
+  private offscreenCtx: CanvasRenderingContext2D | null = null;
+  private floatDataBuffer: Float32Array | null = null;
+
   constructor(options: RecognizerOptions) {
     this.topK = options.topK || 10;
   }
 
   // 子类需要实现的初始化字典方法
   abstract init(modelPath: string, options?: any): Promise<void>;
+
+  /**
+   * 释放资源
+   */
+  dispose() {
+    this.dictionary = [];
+    this.offscreenCanvas = null;
+    this.offscreenCtx = null;
+    this.floatDataBuffer = null;
+  }
 
   protected async loadDictFromContent(content: string, dictPath: string) {
     if (content.includes('<html') || content.includes('<!DOCTYPE')) {
@@ -23,12 +38,15 @@ export abstract class BaseRecognizer {
     const box = this.getBoundingBox(source);
     const imgH = 48;
     const imgW = 128; // 降低宽度到 128，单字符绰绰有余，且能极大减少内存压力
+
+    if (!this.offscreenCanvas) {
+      this.offscreenCanvas = document.createElement('canvas');
+      this.offscreenCanvas.width = imgW;
+      this.offscreenCanvas.height = imgH;
+      this.offscreenCtx = this.offscreenCanvas.getContext('2d')!;
+    }
     
-    const offscreen = document.createElement('canvas');
-    offscreen.width = imgW;
-    offscreen.height = imgH;
-    const ctx = offscreen.getContext('2d')!;
-    
+    const ctx = this.offscreenCtx!;
     ctx.fillStyle = 'rgb(128, 128, 128)';
     ctx.fillRect(0, 0, imgW, imgH);
 
@@ -46,7 +64,12 @@ export abstract class BaseRecognizer {
 
     const imageData = ctx.getImageData(0, 0, imgW, imgH);
     const { data } = imageData;
-    const floatData = new Float32Array(1 * 3 * imgH * imgW);
+    
+    const bufferSize = 1 * 3 * imgH * imgW;
+    if (!this.floatDataBuffer || this.floatDataBuffer.length !== bufferSize) {
+      this.floatDataBuffer = new Float32Array(bufferSize);
+    }
+    const floatData = this.floatDataBuffer;
     
     for (let i = 0; i < imgH * imgW; i++) {
       const r = data[i * 4]! / 255.0;
@@ -97,17 +120,28 @@ export abstract class BaseRecognizer {
 
     if (bestT === -1 || maxNonBlank < 0.001) return { candidates: [] };
 
-    const frameData = outputData.slice(bestT * dictSize!, (bestT + 1) * dictSize!);
+    const frameStart = bestT * dictSize!;
+    
+    // 优化：不再使用 Array.from，改为手动循环
+    const items: { index: number; prob: number }[] = [];
+    
+    // 我们只需要前 topK 个候选者，不需要排序整个 18k 长度的数组
+    // 这里先过滤出有意义的候选者（索引 0 是空白占位符，跳过）
+    const threshold = 0.0001 * maxNonBlank;
+    for (let i = 1; i < dictSize!; i++) {
+        const prob = outputData[frameStart + i]!;
+        if (prob > threshold) {
+            items.push({ index: i, prob });
+        }
+    }
+    
+    items.sort((a, b) => b.prob - a.prob);
+    
     return {
-      candidates: Array.from(frameData)
-        .map((prob, index) => ({ index, prob }))
-        .filter(c => c.index !== 0)
-        .sort((a, b) => b.prob - a.prob)
-        .slice(0, this.topK)
-        .map(c => ({
-          character: this.dictionary[c.index] || '?',
-          score: c.prob / maxNonBlank
-        }))
+      candidates: items.slice(0, this.topK).map(item => ({
+        character: this.dictionary[item.index] || '?',
+        score: item.prob / maxNonBlank
+      }))
     };
   }
 }

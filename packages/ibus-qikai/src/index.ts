@@ -1,4 +1,4 @@
-import { HandwritingRecognizerWeb as RecognizerWeb, PinyinMatch } from '@ibus-qikai/core';
+import {HandwritingRecognizerWeb as RecognizerWeb, PinyinMatch} from '@ibus-qikai/core';
 import models from '@ibus-qikai/models';
 
 export * from '@ibus-qikai/core';
@@ -26,7 +26,8 @@ export class HandwritingInput {
     const finalPinyinDictPath = pinyinDictPath || models.pinyinDictPath;
 
     if (this.recognizer) {
-      await this.recognizer.dispose();
+      // @ts-ignore
+      await this.recognizer?.dispose();
     }
 
     this.recognizer = new RecognizerWeb({
@@ -45,13 +46,15 @@ export class HandwritingInput {
    */
   async dispose() {
     if (this.recognizer) {
-      await this.recognizer.dispose();
+      // @ts-ignore
+      await this.recognizer?.dispose();
       this.recognizer = null;
     }
   }
 
   async recognize(canvas: HTMLCanvasElement, signal?: AbortSignal) {
     if (!this.recognizer) throw new Error('Call init() first');
+    // @ts-ignore
     return this.recognizer.recognize(canvas, signal);
   }
 

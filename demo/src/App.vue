@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { HandwritingInput } from 'ibus-qikai';
+import {ref, onMounted, onUnmounted, watch, nextTick} from 'vue';
+import {HandwritingInput} from 'ibus-qikai';
 import * as ort from 'onnxruntime-web';
 
 // ONNX Runtime configuration
@@ -30,9 +30,9 @@ let pendingDrawPoints: Array<{ x: number; y: number }> = [];
 // Initialize engine
 onMounted(async () => {
   try {
-    inputEngine = new HandwritingInput({ topK: 15 });
+    inputEngine = new HandwritingInput({topK: 15});
     await inputEngine.init(
-      './libs/PP-OCRv5_rec_mobile_infer.onnx',
+      './libs/PP-OCRv5_rec_mobile_infer.ort',
       './libs/ppocrv5_dict.txt',
       './libs/pinyin_dict.json'
     );
@@ -54,7 +54,7 @@ onUnmounted(async () => {
     drawAnimationFrameId = null;
   }
   if (inputEngine) {
-    await inputEngine.dispose();
+    await inputEngine?.dispose();
   }
 });
 
@@ -82,7 +82,7 @@ const handleResize = () => {
 };
 
 const getCoords = (e: MouseEvent | TouchEvent) => {
-  if (!canvasRef.value) return { x: 0, y: 0 };
+  if (!canvasRef.value) return {x: 0, y: 0};
   const rect = canvasRef.value.getBoundingClientRect();
   const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
   const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
@@ -103,11 +103,11 @@ const startDrawing = (e: MouseEvent | TouchEvent) => {
   isRecognizing.value = false;
 
   isDrawing.value = true;
-  const { x, y } = getCoords(e);
+  const {x, y} = getCoords(e);
   ctx.beginPath();
   ctx.moveTo(x, y);
   clearTimeout(recognitionTimer);
-  
+
   if (currentPinyin.value) {
     currentPinyin.value = '';
     candidates.value = [];
@@ -116,24 +116,24 @@ const startDrawing = (e: MouseEvent | TouchEvent) => {
 
 const draw = (e: MouseEvent | TouchEvent) => {
   if (!isDrawing.value || !ctx) return;
-  const { x, y } = getCoords(e);
-  
+  const {x, y} = getCoords(e);
+
   // 收集绘图点，使用 requestAnimationFrame 统一渲染
-  pendingDrawPoints.push({ x, y });
-  
+  pendingDrawPoints.push({x, y});
+
   if (drawAnimationFrameId === null) {
     drawAnimationFrameId = requestAnimationFrame(() => {
       if (!ctx || pendingDrawPoints.length === 0) {
         drawAnimationFrameId = null;
         return;
       }
-      
+
       // 批量渲染所有待绘制点
       for (const point of pendingDrawPoints) {
         ctx.lineTo(point.x, point.y);
       }
       ctx.stroke();
-      
+
       pendingDrawPoints = [];
       drawAnimationFrameId = null;
     });
@@ -143,7 +143,7 @@ const draw = (e: MouseEvent | TouchEvent) => {
 const stopDrawing = () => {
   if (!isDrawing.value) return;
   isDrawing.value = false;
-  
+
   // 刷新任何待处理的绘图
   if (drawAnimationFrameId !== null) {
     cancelAnimationFrame(drawAnimationFrameId);
@@ -156,7 +156,7 @@ const stopDrawing = () => {
     pendingDrawPoints = [];
     drawAnimationFrameId = null;
   }
-  
+
   recognitionTimer = setTimeout(async () => {
     if (recognitionController) recognitionController.abort();
     recognitionController = new AbortController();
@@ -227,7 +227,9 @@ const copyResult = async () => {
   const btn = document.getElementById('copyBtn');
   if (btn) {
     btn.innerText = '已复制!';
-    setTimeout(() => { btn.innerText = originalText; }, 1500);
+    setTimeout(() => {
+      btn.innerText = originalText;
+    }, 1500);
   }
 };
 
@@ -272,9 +274,9 @@ const kbRows = [
           </div>
         </template>
         <template v-else-if="candidates.length > 0">
-          <div 
-            v-for="c in candidates" 
-            :key="c.character" 
+          <div
+            v-for="c in candidates"
+            :key="c.character"
             class="candidate-item"
             @click="confirmChar(c.character)"
             :title="!isPinyinMode ? `置信度: ${(c.score * 100).toFixed(1)}%` : ''"
@@ -288,15 +290,15 @@ const kbRows = [
       </div>
 
       <div class="input-tabs">
-        <button 
-          class="tab-btn" 
+        <button
+          class="tab-btn"
           :class="{ active: activeTab === 'handwriting' }"
           @click="activeTab = 'handwriting'"
         >
           手写输入
         </button>
-        <button 
-          class="tab-btn" 
+        <button
+          class="tab-btn"
           :class="{ active: activeTab === 'keyboard' }"
           @click="activeTab = 'keyboard'"
         >
@@ -307,9 +309,9 @@ const kbRows = [
       <div class="panel-container">
         <!-- Handwriting Panel -->
         <div v-show="activeTab === 'handwriting'" class="panel handwriting-panel">
-          <div 
-            ref="containerRef" 
-            class="canvas-container" 
+          <div
+            ref="containerRef"
+            class="canvas-container"
             :class="{ drawing: isDrawing }"
             @mousedown="startDrawing"
             @mousemove="draw"
@@ -327,9 +329,9 @@ const kbRows = [
         <div v-show="activeTab === 'keyboard'" class="panel keyboard-panel">
           <div class="keyboard">
             <div v-for="(row, i) in kbRows" :key="i" class="kb-row">
-              <div 
-                v-for="key in row" 
-                :key="key" 
+              <div
+                v-for="key in row"
+                :key="key"
                 class="key"
                 :class="{ 
                   wide: key === '退格' || key === '清空',
@@ -365,7 +367,7 @@ const kbRows = [
   --text-secondary: #86868b;
   --border: #d2d2d7;
   --key-bg: #ffffff;
-  --key-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  --key-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   --radius: 16px;
 }
 
@@ -392,8 +394,8 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: var(--radius);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -430,12 +432,12 @@ body {
   text-decoration: none;
   padding: 6px 12px;
   border-radius: 20px;
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   transition: all 0.2s;
 }
 
 .github-link:hover {
-  background: rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.1);
   color: var(--text);
 }
 
@@ -469,8 +471,12 @@ body {
 }
 
 @keyframes blink {
-  from, to { opacity: 1; }
-  50% { opacity: 0; }
+  from, to {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 .candidate-bar {
@@ -479,7 +485,7 @@ body {
   align-items: center;
   padding: 0 16px;
   gap: 8px;
-  background: rgba(0,0,0,0.02);
+  background: rgba(0, 0, 0, 0.02);
   overflow-x: auto;
   scrollbar-width: none;
   border-top: 1px solid var(--border);
@@ -533,7 +539,7 @@ body {
   font-weight: 500;
   border-radius: 10px;
   cursor: pointer;
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   color: var(--text-secondary);
   transition: all 0.2s;
 }
@@ -541,7 +547,7 @@ body {
 .tab-btn.active {
   background: #ffffff;
   color: var(--primary);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .panel-container {
@@ -645,12 +651,12 @@ canvas {
 }
 
 .btn-secondary {
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   color: var(--text);
 }
 
 .btn-secondary:hover {
-  background: rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .btn:active {
@@ -679,7 +685,9 @@ canvas {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loader-text {

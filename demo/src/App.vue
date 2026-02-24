@@ -5,7 +5,8 @@ import * as ort from 'onnxruntime-web';
 
 // ONNX Runtime configuration
 ort.env.wasm.wasmPaths = (fileName: string) => `./libs/${fileName}`;
-ort.env.wasm.numThreads = 1;
+ort.env.wasm.numThreads = 4; // 使用多线程以获得更好的性能
+ort.env.wasm.initTimeout = 10000; // 增加初始化超时时间
 
 const activeTab = ref<'handwriting' | 'keyboard'>('handwriting');
 const isInitializing = ref(true);
@@ -23,6 +24,8 @@ let inputEngine: HandwritingInput;
 let ctx: CanvasRenderingContext2D | null = null;
 let recognitionController: AbortController | null = null;
 let recognitionTimer: any = null;
+let drawAnimationFrameId: number | null = null;
+let pendingDrawPoints: Array<{ x: number; y: number }> = [];
 
 // Initialize engine
 onMounted(async () => {
@@ -46,6 +49,10 @@ onMounted(async () => {
 
 onUnmounted(async () => {
   window.removeEventListener('resize', handleResize);
+  if (drawAnimationFrameId !== null) {
+    cancelAnimationFrame(drawAnimationFrameId);
+    drawAnimationFrameId = null;
+  }
   if (inputEngine) {
     await inputEngine.dispose();
   }
@@ -110,13 +117,45 @@ const startDrawing = (e: MouseEvent | TouchEvent) => {
 const draw = (e: MouseEvent | TouchEvent) => {
   if (!isDrawing.value || !ctx) return;
   const { x, y } = getCoords(e);
-  ctx.lineTo(x, y);
-  ctx.stroke();
+  
+  // 收集绘图点，使用 requestAnimationFrame 统一渲染
+  pendingDrawPoints.push({ x, y });
+  
+  if (drawAnimationFrameId === null) {
+    drawAnimationFrameId = requestAnimationFrame(() => {
+      if (!ctx || pendingDrawPoints.length === 0) {
+        drawAnimationFrameId = null;
+        return;
+      }
+      
+      // 批量渲染所有待绘制点
+      for (const point of pendingDrawPoints) {
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.stroke();
+      
+      pendingDrawPoints = [];
+      drawAnimationFrameId = null;
+    });
+  }
 };
 
 const stopDrawing = () => {
   if (!isDrawing.value) return;
   isDrawing.value = false;
+  
+  // 刷新任何待处理的绘图
+  if (drawAnimationFrameId !== null) {
+    cancelAnimationFrame(drawAnimationFrameId);
+    if (ctx && pendingDrawPoints.length > 0) {
+      for (const point of pendingDrawPoints) {
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.stroke();
+    }
+    pendingDrawPoints = [];
+    drawAnimationFrameId = null;
+  }
   
   recognitionTimer = setTimeout(async () => {
     if (recognitionController) recognitionController.abort();
@@ -415,13 +454,9 @@ body {
 }
 
 .pinyin-indicator.visible {
-  opacity: 1;
-}
-
-.input-display {
-  font-size: 28px;
-  font-weight: 500;
-  min-height: 40px;
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+  will-change: opacity;
   word-break: break-all;
   line-height: 1.2;
 }
@@ -430,6 +465,7 @@ body {
   color: var(--primary);
   animation: blink 1s step-end infinite;
   margin-left: 2px;
+  will-change: opacity;
 }
 
 @keyframes blink {

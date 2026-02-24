@@ -90,20 +90,30 @@ export abstract class BaseRecognizer {
   private getBoundingBox(canvas: HTMLCanvasElement, signal?: AbortSignal) {
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
     
-    // 限制读取范围以减少内存消耗，尤其是针对极大的画布
-    const scanW = canvas.width;
-    const scanH = canvas.height;
+    // 限制扫描区域大小以减少内存占用和处理时间
+    // 对于非常大的 canvas（如 HD 屏幕），只扫描一个合理的最大区域
+    const maxScanSize = 1920; // 最大扫描分辨率
+    let scanW = canvas.width;
+    let scanH = canvas.height;
+    let scale = 1;
     
+    if (scanW > maxScanSize || scanH > maxScanSize) {
+      scale = Math.max(scanW, scanH) / maxScanSize;
+      scanW = Math.ceil(scanW / scale);
+      scanH = Math.ceil(scanH / scale);
+    }
+    
+    // 读取采样后的图像数据以减少内存占用
     const imageData = ctx.getImageData(0, 0, scanW, scanH);
     const data = imageData.data;
     let minX = scanW, minY = scanH, maxX = 0, maxY = 0;
     let hasContent = false;
     
-    // 步进扫描以加速检测，且在高分屏下非常必要
-    const step = 4; // 增加步长到 4 以进一步提升速度和降低处理负担
+    // 步进扫描以加速检测
+    const step = 2;
     for (let y = 0; y < scanH; y += step) {
-      // 每一行扫描检查一次中断信号，确保极速响应
-      if (y % (step * 5) === 0 && signal?.aborted) throw new Error('Aborted');
+      // 每行检查一次中断信号
+      if ((y / step) % 10 === 0 && signal?.aborted) throw new Error('Aborted');
 
       for (let x = 0; x < scanW; x += step) {
         if (data[(y * scanW + x) * 4 + 3]! > 0) {
@@ -115,6 +125,15 @@ export abstract class BaseRecognizer {
         }
       }
     }
+    
+    // 缩放回原始坐标系
+    if (hasContent && scale > 1) {
+      minX = Math.floor(minX * scale);
+      minY = Math.floor(minY * scale);
+      maxX = Math.ceil(maxX * scale);
+      maxY = Math.ceil(maxY * scale);
+    }
+    
     return hasContent ? { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 } : null;
   }
 

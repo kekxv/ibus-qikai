@@ -11,20 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: pnpm/action-setup@v4
-          
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
-      
+
       - name: Install dependencies
         run: pnpm install
-      
+
       - name: Run tests
         run: pnpm --filter @ibus-qikai/core test
-      
+
       - name: Build all packages
         run: pnpm build
 
@@ -43,13 +43,13 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Download Demo Artifact
         uses: actions/download-artifact@v4
         with:
           name: demo-dist
           path: dist
-      
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -58,25 +58,61 @@ jobs:
 
   publish-npm:
     needs: test-and-build
-    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'release')
+    if: github.ref == 'refs/heads/main' # 移除了 commit message 的 release 判断
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # 必须赋予 write 权限才能推送 git tag
     steps:
       - uses: actions/checkout@v4
-      
-      - uses: pnpm/action-setup@v4
+        with:
+          fetch-depth: 0 # 获取完整历史和 tags
+
+      - name: Check version and tag
+        id: check
+        run: |
+          # 从根目录 package.json 读取 version
+          VERSION=$(jq -r .version package.json)
+          TAG="v$VERSION"
+          echo "Current version in package.json: $VERSION"
+          echo "Expected tag: $TAG"
           
+          # 检查远程仓库是否已经存在该 tag
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
+            echo "Tag $TAG already exists. Skipping publish."
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG does not exist. Proceeding to publish."
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: steps.check.outputs.should_publish == 'true'
+
       - uses: actions/setup-node@v4
+        if: steps.check.outputs.should_publish == 'true'
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
-      
+
       - name: Install dependencies
+        if: steps.check.outputs.should_publish == 'true'
         run: pnpm install
-      
+
       - name: Build
+        if: steps.check.outputs.should_publish == 'true'
         run: pnpm build
-      
+
+      - name: Create and push tag
+        if: steps.check.outputs.should_publish == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.check.outputs.tag }}
+          git push origin ${{ steps.check.outputs.tag }}
+
       - name: Publish to NPM
+        if: steps.check.outputs.should_publish == 'true'
         run: pnpm -r publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

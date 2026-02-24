@@ -3,7 +3,14 @@
   "version": "0.1.3",
   "type": "module",
   "description": "Models for handwriting-ocr",
-  "files": ["assets", "index.d.ts"],
+  "files": ["assets", "index.d.ts", "index.js"],
   "main": "index.js",
-  "types": "index.d.ts"
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "default": "./index.js"
+    }
+  }
 }

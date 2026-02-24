@@ -26,7 +26,6 @@ export class HandwritingInput {
     const finalPinyinDictPath = pinyinDictPath || models.pinyinDictPath;
 
     if (this.recognizer) {
-      // @ts-ignore
       await this.recognizer?.dispose();
     }
 
@@ -46,7 +45,6 @@ export class HandwritingInput {
    */
   async dispose() {
     if (this.recognizer) {
-      // @ts-ignore
       await this.recognizer?.dispose();
       this.recognizer = null;
     }
@@ -54,7 +52,6 @@ export class HandwritingInput {
 
   async recognize(canvas: HTMLCanvasElement, signal?: AbortSignal) {
     if (!this.recognizer) throw new Error('Call init() first');
-    // @ts-ignore
     return this.recognizer.recognize(canvas, signal);
   }
 

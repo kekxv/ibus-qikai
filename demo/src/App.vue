@@ -555,6 +555,10 @@ body {
   height: 260px;
 }
 
+.handwriting-panel {
+  height: 100%;
+}
+
 .canvas-container {
   width: 100%;
   height: 100%;

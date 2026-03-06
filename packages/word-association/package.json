@@ -1,6 +1,6 @@
 {
   "name": "@ibus-qikai/word-association",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "type": "module",
   "description": "Word association module using jieba-wasm for browser-based Chinese text analysis",
   "files": ["dist"],

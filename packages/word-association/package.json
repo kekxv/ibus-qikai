@@ -1,8 +1,9 @@
 {
-  "name": "ibus-qikai",
-  "version": "0.1.3",
-  "description": "Simplified handwriting recognition library including default models.",
+  "name": "@ibus-qikai/word-association",
+  "version": "0.1.0",
   "type": "module",
+  "description": "Word association module using jieba-wasm for browser-based Chinese text analysis",
+  "files": ["dist"],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -13,17 +14,14 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"],
   "scripts": {
     "build": "tsc"
   },
-  "dependencies": {
-    "@ibus-qikai/core": "workspace:*",
-    "@ibus-qikai/models": "workspace:*",
-    "@ibus-qikai/word-association": "workspace:*"
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
   },
   "peerDependencies": {
-    "onnxruntime-web": "^1.20.0",
     "jieba-wasm": "^2.4.0"
   },
   "publishConfig": {

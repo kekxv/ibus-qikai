@@ -12,5 +12,8 @@
       "import": "./index.js",
       "default": "./index.js"
     }
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

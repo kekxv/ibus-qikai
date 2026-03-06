@@ -20,9 +20,15 @@ importers:
       '@ibus-qikai/models':
         specifier: workspace:*
         version: link:../packages/models
+      '@ibus-qikai/word-association':
+        specifier: workspace:*
+        version: link:../packages/word-association
       ibus-qikai:
         specifier: workspace:*
         version: link:../packages/ibus-qikai
+      jieba-wasm:
+        specifier: ^2.4.0
+        version: 2.4.0
       onnxruntime-web:
         specifier: ^1.20.0
         version: 1.24.1
@@ -70,11 +76,30 @@ importers:
       '@ibus-qikai/models':
         specifier: workspace:*
         version: link:../models
+      '@ibus-qikai/word-association':
+        specifier: workspace:*
+        version: link:../word-association
+      jieba-wasm:
+        specifier: ^2.4.0
+        version: 2.4.0
       onnxruntime-web:
         specifier: ^1.20.0
         version: 1.24.1
 
   packages/models: {}
+
+  packages/word-association:
+    dependencies:
+      jieba-wasm:
+        specifier: ^2.4.0
+        version: 2.4.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.33
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
 
 packages:
 
@@ -1249,6 +1274,9 @@ packages:
     peerDependenciesMeta:
       node-notifier:
         optional: true
+
+  jieba-wasm@2.4.0:
+    resolution: {integrity: sha512-ZvQdS+FGifrFXZIXSgOyOgEz+1wdy1P4vSvwe37FVtku9ycSdHTZbHqF5i9tMN1JucoAmeiLBeI6/YaqcGD+KA==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -3107,6 +3135,8 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - ts-node
+
+  jieba-wasm@2.4.0: {}
 
   js-tokens@4.0.0: {}
 

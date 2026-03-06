@@ -10,7 +10,9 @@
   "dependencies": {
     "@ibus-qikai/core": "workspace:*",
     "@ibus-qikai/models": "workspace:*",
+    "@ibus-qikai/word-association": "workspace:*",
     "ibus-qikai": "workspace:*",
+    "jieba-wasm": "^2.4.0",
     "onnxruntime-web": "^1.20.0",
     "vue": "^3.5.28"
   },

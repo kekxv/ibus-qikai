@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {ref, onMounted, onUnmounted, watch, nextTick} from 'vue';
-import {HandwritingInput} from 'ibus-qikai';
+import {HandwritingInput, WordAssociation} from 'ibus-qikai';
 import * as ort from 'onnxruntime-web';
 
 // ONNX Runtime configuration
@@ -19,8 +19,11 @@ const isDrawing = ref(false);
 const isRecognizing = ref(false);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const containerRef = ref<HTMLElement | null>(null);
+const isWordAssociationMode = ref(false);
+const associationWords = ref<any[]>([]);
 
 let inputEngine: HandwritingInput;
+let wordAssociation: WordAssociation | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let recognitionController: AbortController | null = null;
 let recognitionTimer: any = null;
@@ -36,12 +39,17 @@ onMounted(async () => {
       './libs/ppocrv5_dict.txt',
       './libs/pinyin_dict.json'
     );
+
+    // 初始化词汇联想模块
+    wordAssociation = new WordAssociation();
+    await wordAssociation.init();
+
     isInitializing.value = false;
     nextTick(() => {
       initCanvas();
     });
   } catch (e) {
-    loaderText.value = '初始化失败: ' + (e as Error).message;
+    loaderText.value = '初始化失败：' + (e as Error).message;
     console.error(e);
   }
   window.addEventListener('resize', handleResize);
@@ -101,6 +109,7 @@ const startDrawing = (e: MouseEvent | TouchEvent) => {
     recognitionController = null;
   }
   isRecognizing.value = false;
+  isWordAssociationMode.value = false;
 
   isDrawing.value = true;
   const {x, y} = getCoords(e);
@@ -168,6 +177,7 @@ const stopDrawing = () => {
       const result = await inputEngine.recognize(canvasRef.value, signal);
       candidates.value = result.candidates;
       isPinyinMode.value = false;
+      isWordAssociationMode.value = false;
     } catch (e: any) {
       if (e.message !== 'Aborted') console.error('识别出错:', e);
     } finally {
@@ -177,6 +187,116 @@ const stopDrawing = () => {
     }
   }, 300);
 };
+
+// 词汇联想功能
+const showWordAssociations = async (text: string) => {
+  if (!wordAssociation || !text) return;
+
+  try {
+    isWordAssociationMode.value = true;
+    
+    // 使用前缀匹配：查找以输入文本开头的词组
+    const associations = wordAssociation.associate(text, 30);
+
+    // 处理联想结果：去掉已输入的部分，只保留剩余部分
+    const uniqueSuggestions = new Set<string>();
+    const prefixMatches = associations
+      .filter(item => item.phrase.length > text.length && item.phrase.startsWith(text))
+      .map(item => {
+        const remaining = item.phrase.substring(text.length);
+        return {
+          character: remaining,
+          fullPhrase: item.phrase,
+          freq: item.freq
+        };
+      })
+      .filter(item => {
+        // 去重
+        if (uniqueSuggestions.has(item.character)) {
+          return false;
+        }
+        uniqueSuggestions.add(item.character);
+        return true;
+      });
+    
+    associationWords.value = prefixMatches.sort((a, b) => b.freq - a.freq);
+    
+    // 如果没有前缀匹配结果，则对最后一个字进行联想（前缀匹配）
+    if (associationWords.value.length === 0 && text.length > 1) {
+      const lastChar = text[text.length - 1];
+      const lastCharAssociations = wordAssociation.associate(lastChar, 30);
+      const lastCharMatches = lastCharAssociations
+        .filter(item => item.phrase.length > 1 && item.phrase.startsWith(lastChar))
+        .map(item => {
+          const remaining = item.phrase.substring(1);
+          return {
+            character: remaining,
+            fullPhrase: item.phrase,
+            freq: Math.round(item.freq * 0.8)  // 降权处理
+          };
+        })
+        .filter(item => {
+          if (uniqueSuggestions.has(item.character)) return false;
+          uniqueSuggestions.add(item.character);
+          return true;
+        });
+      
+      associationWords.value = lastCharMatches.sort((a, b) => b.freq - a.freq);
+    }
+    
+    // 如果还是没有结果，且是单字，则使用包含匹配
+    if (associationWords.value.length === 0 && text.length === 1) {
+      const allAssociations = wordAssociation.associate(text, 30);
+      const containsMatches = allAssociations
+        .filter(item => item.phrase.length > text.length && item.phrase.includes(text) && !item.phrase.startsWith(text))
+        .map(item => {
+          const index = item.phrase.indexOf(text);
+          const remaining = item.phrase.substring(0, index) + item.phrase.substring(index + text.length);
+          return {
+            character: remaining,
+            fullPhrase: item.phrase,
+            freq: Math.round(item.freq * 0.5)
+          };
+        })
+        .filter(item => {
+          if (uniqueSuggestions.has(item.character)) return false;
+          uniqueSuggestions.add(item.character);
+          return true;
+        })
+        .sort((a, b) => b.freq - a.freq);
+      
+      associationWords.value = containsMatches;
+    }
+  } catch (e) {
+    console.error('词汇联想出错:', e);
+  }
+};
+
+// 点击候选词时显示词汇联想
+const onCandidateClick = async (char: string) => {
+  confirmChar(char);
+  // 点击单字候选词时，对该字进行联想
+  await showWordAssociations(char);
+};
+
+// 点击词汇联想候选词
+const onAssociationClick = (char: string) => {
+  confirmChar(char);
+  // 清空词汇联想候选
+  isWordAssociationMode.value = false;
+  associationWords.value = [];
+};
+
+// 监听输入文本变化，实时显示词汇联想
+watch(currentText, async (val) => {
+  if (val && val.length > 0 && wordAssociation && !isPinyinMode.value && !isRecognizing.value) {
+    // 对整个输入进行联想
+    await showWordAssociations(val);
+  } else {
+    isWordAssociationMode.value = false;
+    associationWords.value = [];
+  }
+});
 
 // Pinyin logic
 const handleKeyClick = (key: string) => {
@@ -195,6 +315,7 @@ watch(currentPinyin, (val) => {
   if (val) {
     isPinyinMode.value = true;
     candidates.value = inputEngine.matchPinyin(val);
+    isWordAssociationMode.value = false;
   } else {
     if (isPinyinMode.value) candidates.value = [];
   }
@@ -209,12 +330,15 @@ const confirmChar = (char: string) => {
     ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height);
   }
   candidates.value = [];
+  isWordAssociationMode.value = false;
 };
 
 const resetAll = () => {
   currentText.value = '';
   currentPinyin.value = '';
   candidates.value = [];
+  associationWords.value = [];
+  isWordAssociationMode.value = false;
   if (ctx && canvasRef.value) {
     ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height);
   }
@@ -267,8 +391,20 @@ const kbRows = [
         </div>
       </div>
 
-      <div class="candidate-bar" :class="{ empty: candidates.length === 0 }">
-        <template v-if="isRecognizing">
+      <!-- 词汇联想候选栏 -->
+      <div class="candidate-bar association-bar" :class="{ active: isWordAssociationMode }">
+        <template v-if="isWordAssociationMode">
+          <div class="association-title">词汇联想：</div>
+          <div
+            v-for="item in associationWords"
+            :key="item.character"
+            class="candidate-item candidate-item-phrase"
+            @click="onAssociationClick(item.character)"
+          >
+            {{ item.character }}
+          </div>
+        </template>
+        <template v-else-if="isRecognizing">
           <div class="empty-hint recognizer-hint">
             <span class="mini-spinner"></span> 正在识别...
           </div>
@@ -278,8 +414,8 @@ const kbRows = [
             v-for="c in candidates"
             :key="c.character"
             class="candidate-item"
-            @click="confirmChar(c.character)"
-            :title="!isPinyinMode ? `置信度: ${(c.score * 100).toFixed(1)}%` : ''"
+            @click="onCandidateClick(c.character)"
+            :title="!isPinyinMode ? `置信度：${(c.score * 100).toFixed(1)}%` : ''"
           >
             {{ c.character }}
           </div>
@@ -333,7 +469,7 @@ const kbRows = [
                 v-for="key in row"
                 :key="key"
                 class="key"
-                :class="{ 
+                :class="{
                   wide: key === '退格' || key === '清空',
                   danger: key === '清空'
                 }"
@@ -496,6 +632,23 @@ body {
   display: none;
 }
 
+.candidate-bar.association-bar {
+  background: rgba(0, 122, 255, 0.05);
+  border-color: var(--primary);
+}
+
+.candidate-bar.association-bar.active {
+  background: rgba(0, 122, 255, 0.08);
+}
+
+.association-title {
+  font-size: 13px;
+  color: var(--primary);
+  font-weight: 600;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
 .candidate-item {
   min-width: 44px;
   height: 40px;
@@ -507,6 +660,18 @@ body {
   border-radius: 8px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  position: relative;
+}
+
+.candidate-item .pos-tag {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 9px;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 3px;
+  border-radius: 3px;
 }
 
 .candidate-item:hover {
@@ -516,6 +681,15 @@ body {
 
 .candidate-item:active {
   transform: scale(0.9);
+}
+
+.candidate-item-phrase {
+  min-width: 60px;
+  font-size: 18px;
+}
+
+.candidate-item-phrase:hover {
+  background: rgba(0, 122, 255, 0.15);
 }
 
 .empty-hint {

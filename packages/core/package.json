@@ -30,5 +30,8 @@
   },
   "peerDependencies": {
     "onnxruntime-web": "^1.20.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

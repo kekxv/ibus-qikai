@@ -1,6 +1,6 @@
-import {HandwritingRecognizerWeb as RecognizerWeb, PinyinMatch} from '@ibus-qikai/core';
+import { HandwritingRecognizerWeb as RecognizerWeb, PinyinMatch } from '@ibus-qikai/core';
 import models from '@ibus-qikai/models';
-
+export { WordAssociation } from '@ibus-qikai/word-association';
 export * from '@ibus-qikai/core';
 
 export class HandwritingInput {

@@ -2,10 +2,10 @@ import init, { cut, cut_all, cut_for_search, tag, tokenize, add_word, with_dict,
 import { phraseDict as defaultPhraseDict } from './assets/phrase_dict';
 
 // 默认词典路径
-export const dictPath = 'dict.txt';
+export const dictPath = './dict.txt';
 
 // 默认 WASM 路径
-export const wasmPath = '/libs/jieba_rs_wasm_bg.wasm';
+export const wasmPath = './libs/jieba_rs_wasm_bg.wasm';
 
 // 词组词典条目
 export interface PhraseEntry {
